@@ -1,0 +1,259 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>gbxml parser</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+<link href="css/style.css" rel="stylesheet">
+<script src='./js/jquery-1.11.1.min.js'></script>
+<script src='./js/Orz.js'></script>
+<script src='./js/OK.js'></script>
+</head>
+
+<body>
+<center><H1>GBXML parser test</H1></center>
+<hr/>
+<center><div id="target" class="target images"><b>Please drag gbxml file to here</b></div></center>
+<hr/>
+<div id="container" style="height: 500px; min-width: 500px"></div>
+
+<script type='text/javascript'>
+
+// target events
+var target = document.getElementById('target');
+target.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        return false;
+        });
+
+target.addEventListener('dragenter', function(e) {
+        e.target.classList.add("dragover");
+        });
+
+// we want to call this from dragleave and drop
+function onLeave(e) {
+    e.target.classList.remove("dragover");
+}
+
+target.addEventListener('dragleave', onLeave);
+
+target.addEventListener('drop', function(e) {
+        // don't let the browser switch to an image!
+        e.preventDefault();
+        onLeave(e);
+
+        // Create a formData with the file
+        var formData = new FormData();
+        formData.append('file', e.dataTransfer.files[0]);
+        // ... insert POST to server code here
+
+        var real_html_content = '';
+        // Render a preview with file reader!
+        var reader = new FileReader();
+        reader.onload = function (event) {
+        real_html_content = atob(event.target.result.split('base64,').slice(-1)[0]);
+
+        };
+
+        reader.readAsDataURL(e.dataTransfer.files[0]);
+
+        function data_processing() {
+                document.getElementById("container").innerHTML = '';
+                //alert(jQuery.isXMLDoc(real_html_content));
+
+                if(real_html_content.toLowerCase().indexOf('<gbxml ') === -1 || real_html_content.toLowerCase().indexOf('<gbxml ') > 1000) {
+                    s = document.createElement("p");
+                    s.innerHTML = '<b><font color="red">Invalid input data ...</font></b>';
+                    document.getElementById("container").appendChild(s);
+
+					target.innerHTML = '';
+					var image = new Image();
+					image.src = orz_image_base64;
+					target.appendChild(image);
+
+					return ;
+                }
+
+				target.innerHTML = '';
+				var image = new Image();
+				image.src = ok_image_base64;
+				target.appendChild(image);
+
+                /*
+                if(xml_processing(real_html_content, 'gbXML'))
+                    alert('y');
+                else
+                    alert('n');
+
+                if(xml_processing(real_html_content, 'gbXML') == undefined) {
+                    s = document.createElement("p");
+                    s.innerHTML = 'Invalid input data ...';
+                    document.getElementById("container").appendChild(s);
+                    return ;
+                }
+                */
+
+                var area_unit = xml_processing(real_html_content, 'gbXML').attr('areaUnit');
+                var length_unit = xml_processing(real_html_content, 'gbXML').attr('lengthUnit');
+
+                // area
+                var s = null;
+                s = document.createElement("p");
+                s.innerHTML = 'Total area = ' + xml_processing(real_html_content, 'Area').text() + ' ' + area_unit;
+                document.getElementById("container").appendChild(s);
+
+                // space 
+                s = document.createElement("p");
+                s.innerHTML = '# of Space = ' + xml_processing(real_html_content, 'Space').length;
+                document.getElementById("container").appendChild(s);
+
+                // Opening
+                s = document.createElement("p");
+                s.innerHTML = '# of Opening = ' + xml_processing(real_html_content, 'Opening').length;
+                document.getElementById("container").appendChild(s);
+
+                // fixed window
+                /*
+                s = document.createElement("p");
+                s.innerHTML = 'Opening Type = ';
+                var list = [];
+                var all_len = xml_processing(real_html_content, 'Opening').length;
+                document.getElementById("container").appendChild(s);
+                xml_processing(real_html_content, 'Opening').each(function(i) {
+
+                    list.push(jQuery(this).attr('openingType'));
+                    
+                    if(i == all_len - 1) {
+                        s.innerHTML += $.unique(list.sort()).toString();
+                        document.getElementById("container").appendChild(s);
+                    }
+                });
+                */
+
+                // Opening/Surface has area data
+                xml_processing(real_html_content, 'Surface').each(function() {
+                    s = document.createElement("p");
+                    s.innerHTML = 'Area of "'+jQuery(this).attr('id')+'" = ';
+
+                    var all_len = jQuery(this).find('Coordinate').length;
+                    var point_array = [];
+                    jQuery(this).find('Coordinate').each(function(i) {
+                        point_array.push(jQuery(this).text());
+                        if(i == all_len -1) {
+                            s.innerHTML += computeArea( gen3DpointsArray(point_array) )+' '+ area_unit;
+                            document.getElementById("container").appendChild(s);
+                        }
+                    });
+                });
+                xml_processing(real_html_content, 'Opening').each(function() {
+                    s = document.createElement("p");
+                    s.innerHTML = 'Area of "'+jQuery(this).attr('id')+'" = ';
+
+                    var all_len = jQuery(this).find('Coordinate').length;
+                    var point_array = [];
+                    jQuery(this).find('Coordinate').each(function(i) {
+                        point_array.push(jQuery(this).text());
+                        if(i == all_len -1) {
+                            s.innerHTML += computeArea( gen3DpointsArray(point_array) )+' ' + area_unit;
+                            document.getElementById("container").appendChild(s);
+                        }
+                    });
+                });
+        }
+
+        function waitForElement() {
+            if(real_html_content !== ''){
+                data_processing()
+            }
+            else{
+                setTimeout(function(){
+                    waitForElement();
+                },250);
+            }
+        }
+        waitForElement();
+
+});
+
+function renderPreview(file) {
+    // Render a preview using FileReader
+};
+
+function gen3DpointsArray(point_array) {
+    var point_array_3D = [];
+
+    for(var i=0;i<point_array.length;i+=3) {
+        point_array_3D.push([ point_array[i], point_array[i+1], point_array[i+2] ]);
+    }
+
+    return point_array_3D;
+}
+
+function xml_processing(xml_content, xml_tag) {
+    var xml = xml_content;
+    var xmlDoc = $.parseXML( xml );
+    $xml = $( xmlDoc );
+    return $xml.find(xml_tag);
+}
+
+//alert(computeArea([[0, 0, 0], [10, 0, 0], [10, 3, 4], [0, 3, 4]]));
+//alert(computeArea([[50, 15, 9.144], [50, 15, 6.096], [50, 30, 6.096], [50, 30, 9.144]]));
+
+// area of polygon poly
+function computeArea(point_array) {
+	var all_len = point_array.length;
+
+    if (all_len < 3)
+		return 0;
+
+    var total = [0, 0, 0];
+	for (var i=0; i<all_len ; i++) {
+		var vi1 = point_array[i];
+		var vi2;
+		if (i == all_len - 1)
+			vi2 = point_array[0];
+		else
+			vi2 = point_array[i+1];
+		var prod = cross(vi1, vi2);
+        total[0] += prod[0];
+        total[1] += prod[1];
+        total[2] += prod[2];
+	}
+ 
+    var result = dot(total, unit_normal(point_array[0], point_array[1], point_array[2]));
+    return Math.abs(result/2);
+}
+
+// dot product of vectors a and b
+function dot(a, b) {
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] ;
+}
+
+// cross product of vectors a and b
+function cross(a, b) {
+    var x = a[1] * b[2] - a[2] * b[1];
+    var y = a[2] * b[0] - a[0] * b[2];
+    var z = a[0] * b[1] - a[1] * b[0];
+    return [x, y, z];
+}
+
+function det(a) {
+    return a[0][0]*a[1][1]*a[2][2] + a[0][1]*a[1][2]*a[2][0] + a[0][2]*a[1][0]*a[2][1] - a[0][2]*a[1][1]*a[2][0] - a[0][1]*a[1][0]*a[2][2] - a[0][0]*a[1][2]*a[2][1];
+}
+
+// unit normal vector of plane defined by points a, b, and c
+function unit_normal(a, b, c) {
+    x = det([[1,a[1],a[2]], [1,b[1],b[2]], [1,c[1],c[2]]]);
+    y = det([[a[0],1,a[2]], [b[0],1,b[2]], [c[0],1,c[2]]]);
+    z = det([[a[0],a[1],1], [b[0],b[1],1], [c[0],c[1],1]]);
+    magnitude = Math.pow((x*x + y*y + z*z), 0.5);
+    return [x/magnitude, y/magnitude, z/magnitude];
+}
+
+
+</script>
+</body>
+
+</html>
+
+
+
