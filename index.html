@@ -95,20 +95,36 @@ target.addEventListener('drop', function(e) {
                 var area_unit = xml_processing(real_html_content, 'gbXML').attr('areaUnit');
                 var length_unit = xml_processing(real_html_content, 'gbXML').attr('lengthUnit');
 
+                var result_html_content, s;
+
+                // [General Info]
+                result_html_content = '';
+
+                result_html_content += '<div class="table"><div class="row header"><div class="cell">General Info</div><div class="cell"></div></div>';
+
                 // area
-                var s = null;
-                s = document.createElement("p");
-                s.innerHTML = 'Total area = ' + xml_processing(real_html_content, 'Area').text() + ' ' + area_unit;
-                document.getElementById("container").appendChild(s);
+                result_html_content += '<div class="row">';
+                result_html_content += '<div class="cell">'+'Total Area'+'</div>';
+                result_html_content += '<div class="cell">'+xml_processing(real_html_content, 'Area').text()+' '+area_unit+'</div>';
+                result_html_content += '</div>';
 
-                // space 
-                s = document.createElement("p");
-                s.innerHTML = '# of Space = ' + xml_processing(real_html_content, 'Space').length;
-                document.getElementById("container").appendChild(s);
+                // # of Space
+                result_html_content += '<div class="row">';
+                result_html_content += '<div class="cell">'+'# of "Space"'+'</div>';
+                result_html_content += '<div class="cell">'+xml_processing(real_html_content, 'Space').length+'</div>';
+                result_html_content += '</div>';
 
-                // Opening
+                // # of Opening
+                result_html_content += '<div class="row">';
+                result_html_content += '<div class="cell">'+'# of "Opening"'+'</div>';
+                result_html_content += '<div class="cell">'+xml_processing(real_html_content, 'Opening').length+'</div>';
+                result_html_content += '</div>';
+
+                result_html_content += '</div>';
+
+                s = null;
                 s = document.createElement("p");
-                s.innerHTML = '# of Opening = ' + xml_processing(real_html_content, 'Opening').length;
+                s.innerHTML = result_html_content;
                 document.getElementById("container").appendChild(s);
 
                 // fixed window
@@ -129,35 +145,47 @@ target.addEventListener('drop', function(e) {
                 });
                 */
 
-                // Opening/Surface has area data
+                // [Opening/Surface has area data]
+                result_html_content = '';
+                result_html_content += '<div class="table"><div class="row header green"><div class="cell">Element Name</div><div class="cell"></div></div>';
+
                 xml_processing(real_html_content, 'Surface').each(function() {
-                    s = document.createElement("p");
-                    s.innerHTML = 'Area of "'+jQuery(this).attr('id')+'" = ';
+                    result_html_content += '<div class="row">';
+                    result_html_content += '<div class="cell">'+'Area of "'+jQuery(this).attr('id')+'</div>';
+                    result_html_content += '<div class="cell">';
 
                     var all_len = jQuery(this).find('Coordinate').length;
                     var point_array = [];
                     jQuery(this).find('Coordinate').each(function(i) {
                         point_array.push(jQuery(this).text());
                         if(i == all_len -1) {
-                            s.innerHTML += computeArea( gen3DpointsArray(point_array) )+' '+ area_unit;
-                            document.getElementById("container").appendChild(s);
+                            result_html_content += computeArea( gen3DpointsArray(point_array) )+' '+ area_unit;
                         }
                     });
+                    result_html_content += '</div></div>';
                 });
+
                 xml_processing(real_html_content, 'Opening').each(function() {
-                    s = document.createElement("p");
-                    s.innerHTML = 'Area of "'+jQuery(this).attr('id')+'" = ';
+                    result_html_content += '<div class="row">';
+                    result_html_content += '<div class="cell">'+'Area of "'+jQuery(this).attr('id')+'</div>';
+                    result_html_content += '<div class="cell">';
 
                     var all_len = jQuery(this).find('Coordinate').length;
                     var point_array = [];
                     jQuery(this).find('Coordinate').each(function(i) {
                         point_array.push(jQuery(this).text());
                         if(i == all_len -1) {
-                            s.innerHTML += computeArea( gen3DpointsArray(point_array) )+' ' + area_unit;
-                            document.getElementById("container").appendChild(s);
+                            result_html_content += computeArea( gen3DpointsArray(point_array) )+' '+ area_unit;
                         }
                     });
+                    result_html_content += '</div></div>';
                 });
+
+                result_html_content += '</div>';
+                s = null;
+                s = document.createElement("p");
+                s.innerHTML = result_html_content;
+                document.getElementById("container").appendChild(s);
         }
 
         function waitForElement() {
@@ -195,6 +223,11 @@ function xml_processing(xml_content, xml_tag) {
     return $xml.find(xml_tag);
 }
 
+function formatFloat(num, pos) {
+    var size = Math.pow(10, pos);
+    return Math.round(num * size) / size;
+}
+
 //alert(computeArea([[0, 0, 0], [10, 0, 0], [10, 3, 4], [0, 3, 4]]));
 //alert(computeArea([[50, 15, 9.144], [50, 15, 6.096], [50, 30, 6.096], [50, 30, 9.144]]));
 
@@ -220,7 +253,7 @@ function computeArea(point_array) {
 	}
  
     var result = dot(total, unit_normal(point_array[0], point_array[1], point_array[2]));
-    return Math.abs(result/2);
+    return formatFloat(Math.abs(result/2), 4);
 }
 
 // dot product of vectors a and b
