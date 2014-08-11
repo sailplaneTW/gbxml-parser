@@ -99,7 +99,6 @@ target.addEventListener('drop', function(e) {
 
                 // [General Info]
                 result_html_content = '';
-
                 result_html_content += '<div class="table"><div class="row header"><div class="cell">General Info</div><div class="cell"></div></div>';
 
                 // area
@@ -127,6 +126,22 @@ target.addEventListener('drop', function(e) {
                 s.innerHTML = result_html_content;
                 document.getElementById("container").appendChild(s);
 
+                // [Space list]
+                result_html_content = '';
+                result_html_content += '<div class="table"><div class="row header blue"><div class="cell">Space List</div></div>';
+                xml_processing(real_html_content, 'Space').each(function() {
+                    result_html_content += '<div class="row">';
+                    result_html_content += '<div class="cell">';
+                    result_html_content += jQuery(this).attr('id');
+                    result_html_content += '</div></div>';
+                });
+                result_html_content += '</div>';
+
+                s = null;
+                s = document.createElement("p");
+                s.innerHTML = result_html_content;
+                document.getElementById("container").appendChild(s);
+
                 // fixed window
                 /*
                 s = document.createElement("p");
@@ -147,11 +162,11 @@ target.addEventListener('drop', function(e) {
 
                 // [Opening/Surface has area data]
                 result_html_content = '';
-                result_html_content += '<div class="table"><div class="row header green"><div class="cell">Element Name</div><div class="cell"></div></div>';
+                result_html_content += '<div class="table"><div class="row header green"><div class="cell">Opening/Space Area</div><div class="cell"></div></div>';
 
                 xml_processing(real_html_content, 'Surface').each(function() {
                     result_html_content += '<div class="row">';
-                    result_html_content += '<div class="cell">'+'Area of "'+jQuery(this).attr('id')+'</div>';
+                    result_html_content += '<div class="cell">'+'Area of "'+jQuery(this).attr('id')+'"</div>';
                     result_html_content += '<div class="cell">';
 
                     var all_len = jQuery(this).find('Coordinate').length;
